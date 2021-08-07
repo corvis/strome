@@ -1,6 +1,6 @@
 ![Strome Cover Picture](https://raw.githubusercontent.com/corvis/strome/master/docs/assets/cover-picture.png "Strome Cover image")
 
-<h2 align="center">CLI Rack</h2>
+<h2 align="center">Strome</h2>
 
 **Strome** (from Danish "Stromen" /ˈstroː.mə(n)/, stream) is a micro-framework for Python for building processing pipelines.
 
