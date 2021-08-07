@@ -1,0 +1,11 @@
+{
+    "author": "Dmitry Berezovsky",
+    "back": false,
+    "exclude": "",
+    "include": "*.py",
+    "license": "mit",
+    "program": "Strome",
+    "short": "Strome - Micro-framework for Python for building processing pipelines",
+    "single": true,
+    "year": "2021"
+}
