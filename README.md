@@ -2,7 +2,7 @@
 
 <h2 align="center">Strome</h2>
 
-**Strome** (from Danish "Stromen" /ˈstroː.mə(n)/, stream) is a micro-framework for Python for building processing pipelines.
+**Strome** (from Danish `Stromen` _/ˈstroː.mə(n)/_, stream) is a micro-framework for Python for building processing pipelines.
 
 # Credits
 
