@@ -89,7 +89,7 @@ class Cache(object):
         self.__last_updated: Optional[datetime.datetime] = None
         self.__persisted_at: Optional[datetime.datetime] = None
         self.__loaded_at: Optional[datetime.datetime] = None
-        self.__cache = {}
+        self.__cache: Dict[str, Any] = {}
         self.__serializer = serializer
         self.name: str = name
 

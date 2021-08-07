@@ -39,7 +39,7 @@ mypy:
        echo "Running MyPy checks..."; \
        mypy --show-error-codes $(SRC_ROOT); \
        \
-       mypy --show-error-codes $(SRC_ROOT)/../../examples; \
+       # mypy --show-error-codes $(SRC_ROOT)/../../examples; \
        echo "DONE: MyPy"; \
     )
 

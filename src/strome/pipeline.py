@@ -24,15 +24,14 @@
 import logging
 import os
 import subprocess
-import sys
 from copy import copy
 from tempfile import gettempdir
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 
 import cerberus
-
 import cli_rack.loader
 import cli_rack.utils
+
 from strome import const
 from strome.cache import Cache, FileSystemCacheSerializer
 from strome.error import ConfigValidationError
@@ -40,7 +39,7 @@ from strome.error import ConfigValidationError
 
 class ValidationResult:
     def __init__(self) -> None:
-        self.errors = {}
+        self.errors: Dict[str, Any] = {}
         self.normalized_data: Optional[dict] = None
         self.data: Optional[dict] = None
 
@@ -57,7 +56,7 @@ class StromeRuntime:
         self.config = config or {}
         self.is_configured = False
         self.__root_element_name = root_element_name
-        self.context = {
+        self.context: Dict[str, Any] = {
             const.RUNTIME_INPUT_FILES: [],
             const.RUNTIME_RESOURCE_PATH: [],
             const.RUNTIME_OUTPUT: {},
@@ -112,11 +111,11 @@ class StromeRuntime:
 
 
 class PipelineElement(object):
-    NAME: str = None
+    NAME: str
     PARAMS_SCHEMA: dict = {}
-    PROVIDES: Optional[List[str]] = None
-    REQUIRES: Optional[List[str]] = None
-    DEPENDENCIES: Optional[List[str]] = None
+    PROVIDES: List[str] = []
+    REQUIRES: List[str] = []
+    DEPENDENCIES: List[str] = []
 
     @classmethod
     def name(cls):
@@ -158,13 +157,7 @@ class PipelineElement(object):
 class ExternalExecutableMixin(object):
     @staticmethod
     def run_executable(*args, hide_output=False, mute_output=False) -> subprocess.CompletedProcess:
-        stdout = sys.stdout
-        stderr = sys.stderr
-        if mute_output:
-            stdout = stderr = subprocess.DEVNULL
-        elif hide_output:
-            stdout = stderr = subprocess.PIPE
-        return subprocess.run(args, bufsize=1024, universal_newlines=True, stdout=stdout, stderr=stderr, shell=False)
+        return cli_rack.utils.run_executable(*args, hide_output=hide_output, mute_output=mute_output)
 
     def is_successful_exit_code(self, *args, expected_code=0) -> bool:
         return self.run_executable(*args, mute_output=True).returncode == expected_code
@@ -172,7 +165,7 @@ class ExternalExecutableMixin(object):
 
 class CacheMixin(object):
     def __init__(self) -> None:
-        self.cache: Cache = None
+        self.cache: Cache = Cache()
 
     def setup_cache(self, pipeline_el: PipelineElement, flow_runtime: StromeRuntime):
         cache_file_location = os.path.join(flow_runtime.temp_dir, "_CACHE", pipeline_el.name() + ".json")

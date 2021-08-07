@@ -28,6 +28,7 @@ from typing import NamedTuple, List, Union, Type
 
 import cli_rack.loader
 import cli_rack.utils
+from cli_rack.utils import safe_cast
 from strome import processors
 from strome import const
 from strome.error import InvalidModuleError, ConfigValidationError
@@ -56,7 +57,7 @@ Pipeline = List[PipelineItem]
 def setup_pipeline(pipeline_def: List[dict], flow_runtime: StromeRuntime) -> Pipeline:
     pipeline: List[PipelineItem] = []
     for cfg in pipeline_def:
-        processor_name = cfg if isinstance(cfg, str) else cfg.get(const.CONF_PIPELINE_NAME)
+        processor_name = cfg if isinstance(cfg, str) else safe_cast(str, cfg.get(const.CONF_PIPELINE_NAME))
         params = {} if isinstance(cfg, str) else cfg.get(const.CONF_PIPELINE_PARAMS, {})
         try:
             if not processors.REGISTRY.exists(processor_name):
@@ -64,7 +65,7 @@ def setup_pipeline(pipeline_def: List[dict], flow_runtime: StromeRuntime) -> Pip
                     raise InvalidModuleError("Processor {} is unknown".format(processor_name))
                 else:
                     load_module(processor_name)
-            pipeline_element = processors.REGISTRY.get_by_name(processor_name)()
+            pipeline_element = processors.REGISTRY.get_by_name(processor_name)()  # type: ignore
         except KeyError:
             raise ValueError("Invalid pipeline configuration. Processor {} is unknown".format(processor_name))
         pipeline_element.load()
@@ -101,7 +102,7 @@ def __is_fully_qualified_name(name: str):
 
 
 def load_libs(flow_runtime: StromeRuntime, force_reload=False):
-    locators = flow_runtime.flow_config.get(const.CONF_LIBS)
+    locators = safe_cast(List, flow_runtime.flow_config.get(const.CONF_LIBS))
     if len(locators) > 0:
         cli_rack.utils.ensure_dir(cli_rack.loader.LoaderRegistry.target_dir)
     for locator in locators:
@@ -120,7 +121,7 @@ def load_context_path(flow_runtime: StromeRuntime):
 
 
 def preload_modules(flow_runtime: StromeRuntime):
-    modules_to_load = flow_runtime.flow_config.get(const.CONF_PRELOAD)
+    modules_to_load = safe_cast(List, flow_runtime.flow_config.get(const.CONF_PRELOAD))
     for m in modules_to_load:
         load_module(m)
 
@@ -156,7 +157,9 @@ def load_module(class_name: str):
     LOGGER.info("\t\tModule {}({}) loaded".format(class_name, processor_cls.name()))
 
 
-def process_strome_config(config_dict: dict, flow_runtime: StromeRuntime, default_strome_conf: dict = None):
+def process_strome_config(  # noqa: C901
+    config_dict: dict, flow_runtime: StromeRuntime, default_strome_conf: dict = None
+):
     if flow_runtime.root_config_element in config_dict:
         flow_runtime.is_configured = True
         # Ensure preprocessor context is declared
@@ -169,28 +172,32 @@ def process_strome_config(config_dict: dict, flow_runtime: StromeRuntime, defaul
             default_strome_conf, conf_strome, merge_lists=False
         )
         # Validate classpath
-        for path in flow_runtime.flow_config.get(const.CONF_CLASSPATH):
-            if isinstance(path, str):
-                if not os.path.exists(path):
+        classpath = flow_runtime.flow_config.get(const.CONF_CLASSPATH)
+        if classpath:
+            for path in classpath:
+                if isinstance(path, str):
+                    if not os.path.exists(path):
+                        raise ConfigValidationError(
+                            "Path " + path + " doesn't exist",
+                            config_section=flow_runtime.root_config_element + "/" + const.CONF_CLASSPATH,
+                        )
+                else:
                     raise ConfigValidationError(
-                        "Path " + path + " doesn't exist",
+                        "Context path must be the list of strings",
                         config_section=flow_runtime.root_config_element + "/" + const.CONF_CLASSPATH,
                     )
-            else:
-                raise ConfigValidationError(
-                    "Context path must be the list of strings",
-                    config_section=flow_runtime.root_config_element + "/" + const.CONF_CLASSPATH,
-                )
         # Validate libs
         cli_rack.loader.LoaderRegistry.target_dir = flow_runtime.flow_config.get(const.CONF_LIB_DIR)
         lib_locators: List[cli_rack.loader.BaseLocatorDef] = []
-        for i, lib_def in enumerate(flow_runtime.flow_config.get(const.CONF_LIBS)):
-            try:
-                lib_locators.append(cli_rack.loader.LoaderRegistry.parse_locator(lib_def))
-            except cli_rack.loader.LoaderError as e:
-                raise ConfigValidationError(
-                    "Invalid library definition: " + str(e),
-                    config_section=flow_runtime.root_config_element + "/" + const.CONF_LIBS,
-                )
-        if len(lib_locators) > 0:
-            flow_runtime.flow_config[const.CONF_LIBS] = lib_locators
+        libs = flow_runtime.flow_config.get(const.CONF_LIBS)
+        if libs is not None:
+            for i, lib_def in enumerate(libs):
+                try:
+                    lib_locators.append(cli_rack.loader.LoaderRegistry.parse_locator(lib_def))
+                except cli_rack.loader.LoaderError as e:
+                    raise ConfigValidationError(
+                        "Invalid library definition: " + str(e),
+                        config_section=flow_runtime.root_config_element + "/" + const.CONF_LIBS,
+                    )
+            if len(lib_locators) > 0:
+                flow_runtime.flow_config[const.CONF_LIBS] = lib_locators

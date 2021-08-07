@@ -21,20 +21,23 @@
 #    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 #    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from strome.pipeline import PipelineElement, ValidationResult
 
 
-class BaseStromenError(Exception):
+class BaseStromeError(Exception):
     def __init__(self, *args: object, **kwargs) -> None:
         super().__init__(*args)
 
 
-class ProcessorLoadingError(BaseStromenError):
+class ProcessorLoadingError(BaseStromeError):
     def __init__(self, message, processor_cls: "PipelineElement" = None, recommendation: str = None) -> None:
         super().__init__(message, processor_cls, recommendation=recommendation)
 
 
-class ConfigValidationError(BaseStromenError):
+class ConfigValidationError(BaseStromeError):
     def __init__(
         self,
         message,
@@ -52,9 +55,9 @@ class ConfigValidationError(BaseStromenError):
         )
 
 
-class InvalidModuleError(BaseStromenError):
+class InvalidModuleError(BaseStromeError):
     pass
 
 
-class ProcessorRuntimeError(BaseStromenError):
+class ProcessorRuntimeError(BaseStromeError):
     pass

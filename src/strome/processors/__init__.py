@@ -21,14 +21,17 @@
 #    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 #    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from typing import Type, Optional, Dict, List
+from typing import Type, Optional, Dict, TYPE_CHECKING, Sequence
+
+if TYPE_CHECKING:
+    from strome.pipeline import PipelineElement
 
 
 class PipelineElementRegistry(object):
     def __init__(self) -> None:
-        self.__registry: Dict[str, "PipelineElement"] = {}
+        self.__registry: Dict[str, Type[PipelineElement]] = {}
 
-    def register(self, pipeline_element: Type["PipelineElement"], aliases: Optional[List[str]] = None):
+    def register(self, pipeline_element: Type["PipelineElement"], aliases: Optional[Sequence[str]] = None):
         self.__registry[pipeline_element.name()] = pipeline_element
         if aliases is not None:
             for alias in aliases:

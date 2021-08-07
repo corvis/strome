@@ -25,11 +25,12 @@ import datetime
 import os
 from os import path
 from tempfile import gettempdir
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import jinja2
 from jinja2 import FileSystemLoader
 
+from cli_rack.utils import safe_cast, none_throws
 from strome.const import CONF_INPUT_FILES, CONF_CONTEXT, CONF_CONTEXT_FILES, RUNTIME_OUTPUT
 from strome.pipeline import PipelineElement, StromeRuntime
 from strome.utils import yaml_file_to_dict, deepmerge_dict
@@ -56,19 +57,19 @@ class Jinja2Processor(PipelineElement):
         super().__init__()
         self.output_dir = gettempdir()
         self.search_path: List[str] = [""]
-        self.jinja_options = {}
+        self.jinja_options: Dict[str, Any] = {}
         self.__jinja_env: Optional[jinja2.Environment] = None
 
-    def setup(self, flow_runtime: StromeRuntime, params: dict):
+    def setup(self, flow_runtime: StromeRuntime, _params: dict):
         # HANDLE PARAMS
         default_output_dir = path.join(flow_runtime.temp_dir, "jinja2")
-        params = self._validate_and_normalize_params(params).normalized_data
+        params: Dict[str, Any] = none_throws(self._validate_and_normalize_params(_params).normalized_data)
         # PARAM: output dir
         self.output_dir = params.get(PARAM_OUTPUT_DIR, default_output_dir)
         self._ensure_dir(self.output_dir)
         flow_runtime.register_resource_path(self.output_dir)
         # PARAM: Search Path
-        self.search_path = params.get(PARAM_SEARCH_PATH)
+        self.search_path = safe_cast(List[str], params.get(PARAM_SEARCH_PATH))
         self.search_path.append(os.path.dirname(flow_runtime.config_path))
 
         # Handle context files
@@ -84,7 +85,7 @@ class Jinja2Processor(PipelineElement):
                 raise ValueError(
                     "{} must be a list".format(CONF_CONTEXT_FILES),
                 )
-            included_context = {}
+            included_context: Dict[str, Any] = {}
             for context_file in flow_runtime.flow_config[CONF_CONTEXT_FILES]:
                 ctx = yaml_file_to_dict(context_file)
                 included_context = deepmerge_dict(included_context, ctx)
@@ -114,7 +115,7 @@ class Jinja2Processor(PipelineElement):
         for file_path in flow_runtime.flow_config.get(CONF_INPUT_FILES, tuple()):
             file_name = path.basename(file_path)
             output_file_path = path.join(self.output_dir, file_name)
-            template = self.__jinja_env.get_template(file_path, globals=rendering_context)
+            template = none_throws(self.__jinja_env).get_template(file_path, globals=rendering_context)  # type: ignore
             with open(output_file_path, "w") as f:
                 f.write(template.render())
                 output_files.append(output_file_path)
