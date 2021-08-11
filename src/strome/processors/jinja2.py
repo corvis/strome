@@ -47,6 +47,7 @@ RUNTIME_JINJA2_OUTPUT_FILES = "jinja2-output-files"
 
 class Jinja2Processor(PipelineElement):
     NAME = "jinja2"
+    PROVIDES = (RUNTIME_JINJA2_OUTPUT_FILES, )
     PARAMS_SCHEMA = {
         PARAM_TAG_LIBS: {"type": "list", "schema": {"type": "string"}},
         PARAM_OUTPUT_DIR: {"type": "string"},
