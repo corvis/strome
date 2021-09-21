@@ -54,7 +54,7 @@ class PipelineItem(NamedTuple):
 Pipeline = List[PipelineItem]
 
 
-def setup_pipeline(pipeline_def: List[dict], flow_runtime: StromeRuntime) -> Pipeline:
+def setup_pipeline(pipeline_def: List[Union[dict, str]], flow_runtime: StromeRuntime) -> Pipeline:
     pipeline: List[PipelineItem] = []
     for cfg in pipeline_def:
         processor_name = cfg if isinstance(cfg, str) else safe_cast(str, cfg.get(const.CONF_PIPELINE_NAME))
@@ -104,11 +104,11 @@ def __is_fully_qualified_name(name: str):
 def load_libs(flow_runtime: StromeRuntime, force_reload=False):
     locators = safe_cast(List, flow_runtime.flow_config.get(const.CONF_LIBS))
     if len(locators) > 0:
-        cli_rack.utils.ensure_dir(cli_rack.loader.LoaderRegistry.target_dir)
+        cli_rack.utils.ensure_dir(cli_rack.loader.DefaultLoaderRegistry.target_dir)
     for locator in locators:
         if not isinstance(locator, cli_rack.loader.BaseLocatorDef):
             pass
-        meta = cli_rack.loader.LoaderRegistry.load(locator, __lib_path_resolver, force_reload)
+        meta = cli_rack.loader.DefaultLoaderRegistry.load(locator, __lib_path_resolver, force_reload)
         flow_runtime.register_lib_meta(meta)
 
 
@@ -121,7 +121,7 @@ def load_context_path(flow_runtime: StromeRuntime):
 
 
 def preload_modules(flow_runtime: StromeRuntime):
-    modules_to_load = safe_cast(List, flow_runtime.flow_config.get(const.CONF_PRELOAD))
+    modules_to_load = safe_cast(List, flow_runtime.flow_config.get(const.CONF_PRELOAD, []))
     for m in modules_to_load:
         load_module(m)
 
@@ -187,13 +187,13 @@ def process_strome_config(  # noqa: C901
                         config_section=flow_runtime.root_config_element + "/" + const.CONF_CLASSPATH,
                     )
         # Validate libs
-        cli_rack.loader.LoaderRegistry.target_dir = flow_runtime.flow_config.get(const.CONF_LIB_DIR)
+        cli_rack.loader.DefaultLoaderRegistry.target_dir = flow_runtime.flow_config.get(const.CONF_LIB_DIR)
         lib_locators: List[cli_rack.loader.BaseLocatorDef] = []
         libs = flow_runtime.flow_config.get(const.CONF_LIBS)
         if libs is not None:
             for i, lib_def in enumerate(libs):
                 try:
-                    lib_locators.append(cli_rack.loader.LoaderRegistry.parse_locator(lib_def))
+                    lib_locators.append(cli_rack.loader.DefaultLoaderRegistry.parse_locator(lib_def))
                 except cli_rack.loader.LoaderError as e:
                     raise ConfigValidationError(
                         "Invalid library definition: " + str(e),
