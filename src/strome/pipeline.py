@@ -24,28 +24,16 @@
 import logging
 import os
 import subprocess
-from copy import copy
 from tempfile import gettempdir
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, Sequence
 
-import cerberus
 import cli_rack.loader
 import cli_rack.utils
+from cli_rack_validation import crv
 
 from strome import const
 from strome.cache import Cache, FileSystemCacheSerializer
 from strome.error import ConfigValidationError
-
-
-class ValidationResult:
-    def __init__(self) -> None:
-        self.errors: Dict[str, Any] = {}
-        self.normalized_data: Optional[dict] = None
-        self.data: Optional[dict] = None
-
-    @property
-    def has_errors(self):
-        return len(self.errors) > 0
 
 
 class StromeRuntime:
@@ -123,21 +111,18 @@ class PipelineElement(object):
 
     def __init__(self) -> None:
         self.logger = logging.getLogger(self.name())
-        self.validator = cerberus.Validator()
+        self.logical_path: Sequence[str] = []
 
     def _validate_and_normalize_params(
         self, params, raise_error=True, schema: Optional[dict] = None
-    ) -> ValidationResult:
+    ) -> crv.ValidationResult:
         _schema = schema or self.PARAMS_SCHEMA
-        result = ValidationResult()
-        result.data = copy(params)
-        is_valid = self.validator.validate(params, _schema)
-        if not is_valid:
-            result.errors = copy(self.validator.errors)
-        else:
-            result.normalized_data = self.validator.normalized(params, _schema)
+        with crv.prepend_path(self.logical_path):
+            result = crv.validate_and_normalize(params, _schema, False)
         if result.has_errors and raise_error:
-            raise ConfigValidationError("Invalid pipeline element configuration", self, result)
+            raise ConfigValidationError(
+                "Invalid configuration: " + result.error.error_message, self, result  # type: ignore
+            )
         return result
 
     @staticmethod

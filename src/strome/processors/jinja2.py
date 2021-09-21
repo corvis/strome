@@ -30,6 +30,7 @@ from typing import List, Optional, Dict, Any
 import jinja2
 from jinja2 import FileSystemLoader
 
+from cli_rack_validation import crv
 from cli_rack.utils import safe_cast, none_throws
 from strome.const import CONF_INPUT_FILES, CONF_CONTEXT, CONF_CONTEXT_FILES, RUNTIME_OUTPUT
 from strome.pipeline import PipelineElement, StromeRuntime
@@ -47,11 +48,13 @@ RUNTIME_JINJA2_OUTPUT_FILES = "jinja2-output-files"
 
 class Jinja2Processor(PipelineElement):
     NAME = "jinja2"
-    PROVIDES = (RUNTIME_JINJA2_OUTPUT_FILES, )
+    PROVIDES = [
+        RUNTIME_JINJA2_OUTPUT_FILES,
+    ]
     PARAMS_SCHEMA = {
-        PARAM_TAG_LIBS: {"type": "list", "schema": {"type": "string"}},
-        PARAM_OUTPUT_DIR: {"type": "string"},
-        PARAM_SEARCH_PATH: {"type": "list", "schema": {"type": "string"}, "default": [""]},
+        PARAM_TAG_LIBS: crv.ensure_list(crv.string),
+        PARAM_OUTPUT_DIR: crv.string,
+        crv.Required(PARAM_SEARCH_PATH, default=[""]): crv.ensure_list(crv.string),
     }
 
     def __init__(self) -> None:

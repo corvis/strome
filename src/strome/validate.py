@@ -20,10 +20,3 @@
 #    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 #    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 #    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-import os
-
-
-def file_exist(field, value, error):
-    if not os.path.isfile(value):
-        error(field, "File {} doesn't exist".format(value))

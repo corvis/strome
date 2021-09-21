@@ -21,6 +21,9 @@
 #    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 #    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import os
+from typing import List, Optional
+
 import yaml
 
 
@@ -54,3 +57,18 @@ def yaml_file_to_dict(yaml_file: str) -> dict:
 def dict_to_yaml_file(yaml_dict: dict, yaml_file: str):
     with open(yaml_file, "w") as f:
         return yaml.dump(yaml_dict, f)
+
+
+def get_all_existing_files(list_files: List[str]) -> List[str]:
+    result = []
+    for file_path in list_files:
+        if os.path.exists(file_path):
+            result.append(file_path)
+    return result
+
+
+def get_first_existing_file(list_files: List[str]) -> Optional[str]:
+    res = get_all_existing_files(list_files)
+    if len(res) == 0:
+        return None
+    return res[0]

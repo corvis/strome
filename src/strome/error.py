@@ -23,8 +23,10 @@
 
 from typing import Optional, TYPE_CHECKING
 
+from cli_rack_validation.domain import ValidationResult
+
 if TYPE_CHECKING:
-    from strome.pipeline import PipelineElement, ValidationResult
+    from strome.pipeline import PipelineElement
 
 
 class BaseStromeError(Exception):
